@@ -4,7 +4,7 @@ import sys
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-from pomodoro.main_window import JanelaPrincipal
+from src.main_window import JanelaPrincipal
 
 class App:
     def __init__(self):

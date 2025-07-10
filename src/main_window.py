@@ -2,31 +2,35 @@
 import gi
 import os
 import pygame
+import logging
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('AyatanaAppIndicator3', '0.1')
 from gi.repository import Gtk, AyatanaAppIndicator3
 
 # Importamos a nossa classe de lógica
-from pomodoro.engine import PomodoroEngine
-from pomodoro.sound_manager import SoundManager
+from src.engine import PomodoroEngine
+from src.sound_manager import SoundManager
+from src.icon_manager import IconManager
 
 class JanelaPrincipal(Gtk.Window):
     def __init__(self):
-        super().__init__(title="Meu Timer Pomodoro")
+        super().__init__(title="Pomodoro Timer")
+        self.set_icon_name("pomodoro")
         self.set_default_size(350, 400)
         self.connect("delete-event", self.on_janela_fechar)
 
-        # A janela agora tem uma instância do motor de lógica
-        self.motor = PomodoroEngine()
-        self.sound_manager = SoundManager() # Instância do novo SoundManager
+        
+        self.motor = PomodoroEngine() # Instância do motor de lógica
+        self.sound_manager = SoundManager() # Instância do SoundManager
+        self.icon_manager = IconManager() # Instância para carregar o icone da aplicação
 
         # Conectar os sinais do motor aos métodos desta classe
         self.motor.connect('tempo-alterado', self.on_motor_tempo_alterado)
         self.motor.connect('estado-alterado', self.on_motor_estado_alterado)
         self.motor.connect('som-disparado', self.on_motor_som_disparado)
         
-        # --- Construção da UI (praticamente igual a antes) ---
+        # --- Construção da UI ---
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         vbox.set_margin_top(15); vbox.set_margin_bottom(15); vbox.set_margin_start(15); vbox.set_margin_end(15)
         self.add(vbox)
@@ -75,19 +79,24 @@ class JanelaPrincipal(Gtk.Window):
         grid_config.attach(Gtk.Label(label="Alerta Sonoro:", xalign=1), 0, 2, 1, 1)
         grid_config.attach(self.combo_som, 1, 2, 1, 1)
         
-        # --- Configuração do Ícone (igual a antes) ---
-        self.indicator = AyatanaAppIndicator3.Indicator.new("pomodoro-app-indicator", "appointment-new", AyatanaAppIndicator3.IndicatorCategory.APPLICATION_STATUS)
+        
+        # --------- Configurar Icone da aplicação -----------
+        self.icon_manager.aplicar_a_janela(self) # "self" é a própria janela
+        self.indicator = self.icon_manager.criar_indicador() # Pega no indicador já pronto
+
         self.indicator.set_status(AyatanaAppIndicator3.IndicatorStatus.ACTIVE)
         self.menu = Gtk.Menu()
         item_mostrar = Gtk.MenuItem(label="Mostrar Janela"); item_mostrar.connect("activate", self.on_mostrar); self.menu.append(item_mostrar)
         item_sair = Gtk.MenuItem(label="Sair"); item_sair.connect("activate", self.on_sair); self.menu.append(item_sair)
         self.menu.show_all()
         self.indicator.set_menu(self.menu)
-
+        # ---------------------------------------------------
+        
+        
         # Inicia o estado da aplicação
         self.on_reiniciar_clicado(None)
 
-    # --- Métodos que reagem aos cliques (agora muito mais simples) ---
+    # --- Métodos que reagem aos cliques ---
     def on_iniciar_clicado(self, widget):
         self.motor.iniciar()
 
@@ -115,7 +124,7 @@ class JanelaPrincipal(Gtk.Window):
         som_selecionado = self.combo_som.get_active_text()
         self.sound_manager.play_sound(som_selecionado) # Delega a tarefa!
 
-    # --- Métodos de controlo da janela ---
+    # --- Métodos de controle da janela em si ---
     def on_mostrar(self, widget): self.show_all()
     def on_janela_fechar(self, widget, event): self.hide(); return True
     def on_sair(self, widget): Gtk.main_quit()

@@ -3,7 +3,7 @@ import gi
 import os
 import pygame
 
-from pomodoro.engine import PomodoroEngine
+from src.engine import PomodoroEngine
 
 class SoundManager():
 
